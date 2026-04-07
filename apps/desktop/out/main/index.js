@@ -1,10 +1,9 @@
 "use strict";
 const fs = require("node:fs");
 const path = require("node:path");
-const Sentry = require("@sentry/electron/main");
 const electron = require("electron");
 const shared = require("@ha/shared");
-const Store = require("electron-store");
+const ElectronStore = require("electron-store");
 const mcp = require("@ha/mcp");
 const os = require("node:os");
 const log = require("electron-log");
@@ -15,6 +14,7 @@ const wsServer = require("@ha/ws-server");
 const crypto = require("node:crypto");
 const fsPromise = require("node:fs/promises");
 const EventEmitter = require("eventemitter3");
+const Sentry = require("@sentry/electron/main");
 const electronUpdater = require("electron-updater");
 function _interopNamespaceDefault(e) {
   const n = Object.create(null, { [Symbol.toStringTag]: { value: "Module" } });
@@ -34,10 +34,10 @@ function _interopNamespaceDefault(e) {
 }
 const fs__namespace = /* @__PURE__ */ _interopNamespaceDefault(fs);
 const path__namespace = /* @__PURE__ */ _interopNamespaceDefault(path);
-const Sentry__namespace = /* @__PURE__ */ _interopNamespaceDefault(Sentry);
 const os__namespace = /* @__PURE__ */ _interopNamespaceDefault(os);
 const crypto__namespace = /* @__PURE__ */ _interopNamespaceDefault(crypto);
 const fsPromise__namespace = /* @__PURE__ */ _interopNamespaceDefault(fsPromise);
+const Sentry__namespace = /* @__PURE__ */ _interopNamespaceDefault(Sentry);
 const IS_DEV = process.env.NODE_ENV === "development";
 const APP_PROTOCOL = "pencil";
 const EDITOR_PORT = process.env.EDITOR_PORT || "3000";
@@ -147,6 +147,7 @@ const defaults = {
   workspaceFolders: {},
   installOnAppQuit: void 0
 };
+const Store = typeof ElectronStore === "function" ? ElectronStore : ElectronStore.default;
 const store = new Store({ defaults });
 class DesktopConfig {
   constructor(store2) {
@@ -1930,22 +1931,6 @@ function openTerminal() {
     node_child_process.exec("start cmd.exe");
   }
 }
-Sentry__namespace.init({
-  dsn: "https://1f085c3019b029471bf9e444f4734eb5@o4510271844122624.ingest.us.sentry.io/4510753382400000",
-  release: electron.app.getVersion(),
-  sendDefaultPii: true,
-  enabled: !IS_DEV,
-  beforeSend(event) {
-    if (!event.contexts) {
-      event.contexts = {};
-    }
-    if (!event.contexts.device) {
-      event.contexts.device = {};
-    }
-    event.contexts.device["Is Online"] = electron.net.isOnline();
-    return event;
-  }
-});
 let initArgs = getInitArgs();
 let pencilApp;
 const gotTheLock = electron.app.requestSingleInstanceLock();

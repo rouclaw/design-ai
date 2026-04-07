@@ -1,4 +1,4 @@
-import Store from "electron-store";
+import ElectronStore from "electron-store";
 import type { LoginType } from "@ha/shared";
 import { DesktopMCPAdapter } from "./desktop-mcp-adapter";
 
@@ -38,10 +38,16 @@ const defaults: DesktopConfigSchema = {
   installOnAppQuit: undefined,
 };
 
+type ElectronStoreConstructor = new <T extends object>(options?: ConstructorParameters<typeof ElectronStore>[0]) => ElectronStore<T>;
+
+const Store = (
+  typeof ElectronStore === "function" ? ElectronStore : ElectronStore.default
+) as ElectronStoreConstructor;
+
 const store = new Store<DesktopConfigSchema>({ defaults });
 
 class DesktopConfig {
-  constructor(private readonly store: Store<DesktopConfigSchema>) {}
+  constructor(private readonly store: ElectronStore<DesktopConfigSchema>) {}
 
   private handleMalformedStore(error: unknown): boolean {
     const errorName = error instanceof Error ? error.name : String(error);

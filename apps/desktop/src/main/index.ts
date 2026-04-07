@@ -1,29 +1,11 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import * as Sentry from "@sentry/electron/main";
 import { app, dialog, net, protocol } from "electron";
 import { parseAgentExecuteConfig } from "./agent-execute-config";
 import { PencilApp, type PencilInitArgs } from "./app";
 import { APP_PROTOCOL, IS_DEV, IS_MAC } from "./constants";
 import { logger } from "./logger";
 import { quitAndInstallIfUpdateDownloaded } from "./updater";
-
-Sentry.init({
-  dsn: "https://1f085c3019b029471bf9e444f4734eb5@o4510271844122624.ingest.us.sentry.io/4510753382400000",
-  release: app.getVersion(),
-  sendDefaultPii: true,
-  enabled: !IS_DEV,
-  beforeSend(event) {
-    if (!event.contexts) {
-      event.contexts = {};
-    }
-    if (!event.contexts.device) {
-      event.contexts.device = {};
-    }
-    (event.contexts.device as any)["Is Online"] = net.isOnline();
-    return event;
-  },
-});
 
 let initArgs = getInitArgs();
 let pencilApp: PencilApp | undefined;

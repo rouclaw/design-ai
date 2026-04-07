@@ -1,7 +1,7 @@
 {
   "name": "@app/desktop",
   "version": "1.0.0",
-  "main": "./dist/main/index.js",
+  "main": "./out/main/index.js",
   "dependencies": {
     "@ha/ipc": "workspace:*",
     "@ha/mcp": "workspace:*",

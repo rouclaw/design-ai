@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 
 export default defineConfig({
   main: {
+  
     entry: resolve(__dirname, "src/main/index.ts"),
   },
   preload: {
