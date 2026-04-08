@@ -1,7 +1,7 @@
 {
   "version": 3,
   "sources": ["../../src/index.ts"],
-  "sourcesContent": ["export {\r\n  activateIntegrations,\r\n  removeIntegrations,\r\n} from \"./installer\";\r\nexport * from \"./schemas\";\r\nexport type {\r\n  MCPRemoteServerConfig,\r\n  MCPServerConfig,\r\n  MCPSetupPlatformAdapter,\r\n  MCPStdioServerConfig,\r\n} from \"./types\";\r\nexport { getMcpBinaryName, getMcpConfiguration } from \"./util\";\r\n"],
+  "sourcesContent": ["export {\n  activateIntegrations,\n  removeIntegrations,\n} from \"./installer\";\nexport * from \"./schemas\";\nexport type {\n  MCPRemoteServerConfig,\n  MCPServerConfig,\n  MCPSetupPlatformAdapter,\n  MCPStdioServerConfig,\n} from \"./types\";\nexport { getMcpBinaryName, getMcpConfiguration } from \"./util\";\n"],
   "mappings": "AAAA;AAAA,EACE;AAAA,EACA;AAAA,OACK;AACP,cAAc;AAOd,SAAS,kBAAkB,2BAA2B;",
   "names": []
 }

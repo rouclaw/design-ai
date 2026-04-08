@@ -11,14 +11,41 @@ import {
   type IPCServer,
 } from "@ha/shared";
 import type { WebSocketServerManager } from "@ha/ws-server";
-import designRules from "../../pencil-editor/src/tool-handlers/rules/design.md?raw";
-import generalRules from "../../pencil-editor/src/tool-handlers/rules/general.md?raw";
 import schema from "../../schema/generated-schema.md?raw";
 import type { ResourceDevice } from "./resource-device";
 import { WebSocketRequestRouter } from "./websocket-request-router.js";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const unique = (arr: string[]): string[] => [...new Set(arr)];
+
+const readOptionalFile = (filePath: string): string | undefined => {
+  try {
+    return fs.readFileSync(filePath, "utf-8");
+  } catch {
+    return undefined;
+  }
+};
+
+const getRules = (): { generalRules: string; designRules: string } => {
+  const rulesRoot = process.env.PENCIL_EDITOR_ROOT
+    ? path.resolve(process.env.PENCIL_EDITOR_ROOT)
+    : undefined;
+
+  const generalFromFile = rulesRoot
+    ? readOptionalFile(
+        path.join(rulesRoot, "src/tool-handlers/rules/general.md"),
+      )
+    : undefined;
+  const designFromFile = rulesRoot
+    ? readOptionalFile(path.join(rulesRoot, "src/tool-handlers/rules/design.md"))
+    : undefined;
+
+  return {
+    generalRules:
+      process.env.PENCIL_GENERAL_RULES ?? generalFromFile ?? "",
+    designRules: process.env.PENCIL_DESIGN_RULES ?? designFromFile ?? "",
+  };
+};
 
 interface PendingDocument {
   resolve: () => void;
@@ -743,6 +770,7 @@ export class IPCDeviceManager {
 }
 
 async function getAgentSystemPrompt(ipc: IPCHost): Promise<string> {
+  const { generalRules, designRules } = getRules();
   let general = `${schema}\n\n${generalRules}\n\n${designRules}`;
 
   const guidelines = (await ipc.request("get-guidelines", {})) as any;

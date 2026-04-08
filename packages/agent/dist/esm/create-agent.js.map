@@ -1,7 +1,7 @@
 {
   "version": 3,
   "sources": ["../../src/create-agent.ts"],
-  "sourcesContent": ["import type { AgentType } from \"@ha/shared\";\r\nimport { ClaudeAgent } from \"./claude/index.js\";\r\nimport { CodexAgent } from \"./codex/index.js\";\r\nimport type { AgentConfig } from \"./config.js\";\r\nimport type { PencilAgent } from \"./types.js\";\r\n\r\nexport function createAgent(type: AgentType, config: AgentConfig): PencilAgent {\r\n  switch (type) {\r\n    case \"claude\": {\r\n      return new ClaudeAgent(config);\r\n    }\r\n    case \"codex\": {\r\n      return new CodexAgent(config);\r\n    }\r\n\r\n    default:\r\n      throw new Error(`Unknown agent type: ${type}`);\r\n  }\r\n}\r\n"],
+  "sourcesContent": ["import type { AgentType } from \"@ha/shared\";\nimport { ClaudeAgent } from \"./claude/index.js\";\nimport { CodexAgent } from \"./codex/index.js\";\nimport type { AgentConfig } from \"./config.js\";\nimport type { PencilAgent } from \"./types.js\";\n\nexport function createAgent(type: AgentType, config: AgentConfig): PencilAgent {\n  switch (type) {\n    case \"claude\": {\n      return new ClaudeAgent(config);\n    }\n    case \"codex\": {\n      return new CodexAgent(config);\n    }\n\n    default:\n      throw new Error(`Unknown agent type: ${type}`);\n  }\n}\n"],
   "mappings": "AACA,SAAS,mBAAmB;AAC5B,SAAS,kBAAkB;AAIpB,SAAS,YAAY,MAAiB,QAAkC;AAC7E,UAAQ,MAAM;AAAA,IACZ,KAAK,UAAU;AACb,aAAO,IAAI,YAAY,MAAM;AAAA,IAC/B;AAAA,IACA,KAAK,SAAS;AACZ,aAAO,IAAI,WAAW,MAAM;AAAA,IAC9B;AAAA,IAEA;AACE,YAAM,IAAI,MAAM,uBAAuB,IAAI,EAAE;AAAA,EACjD;AACF;",
   "names": []
 }
