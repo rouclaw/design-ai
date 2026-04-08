@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { app, dialog, net, protocol, Response, BrowserWindow } from "electron";
+import { app, dialog, net, protocol } from "electron";
 import { parseAgentExecuteConfig } from "./agent-execute-config";
 import { PencilApp, type PencilInitArgs } from "./app";
 import { APP_PROTOCOL, IS_DEV, IS_MAC } from "./constants";
@@ -10,8 +10,7 @@ import { quitAndInstallIfUpdateDownloaded } from "./updater";
 let initArgs = getInitArgs();
 let pencilApp: PencilApp | undefined;
 
-const SHOULD_OPEN_DEVTOOLS =
-  IS_DEV || process.env.PENCIL_OPEN_DEVTOOLS === "1";
+const SHOULD_OPEN_DEVTOOLS = IS_DEV || process.env.PENCIL_OPEN_DEVTOOLS === "1";
 
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
@@ -50,16 +49,16 @@ protocol.registerSchemesAsPrivileged([
 ]);
 // 必须在 app ready 之前调用
 protocol.registerSchemesAsPrivileged([
-  { 
-    scheme: 'pencil-proxy', 
-    privileges: { 
-      standard: true,      // 像 http 一样处理
-      secure: true,        // 标记为安全来源
+  {
+    scheme: "pencil-proxy",
+    privileges: {
+      standard: true, // 像 http 一样处理
+      secure: true, // 标记为安全来源
       supportFetchAPI: true, // 允许 fetch
-      corsEnabled: true,   // 允许跨域
-      stream: true         // 支持流
-    } 
-  }
+      corsEnabled: true, // 允许跨域
+      stream: true, // 支持流
+    },
+  },
 ]);
 app.whenReady().then(async () => {
   logger.info(
@@ -82,11 +81,106 @@ app.whenReady().then(async () => {
     const url = new URL(request.url);
     const path = url.pathname; // 获取请求路径
     console.log(url, path, "========");
-    if (url.hostname === "postai.com") {
-      return new Response("ok", {
+    // 监控配置
+    if (url.hostname === "postai.com" && path === "/i/v0/e/") {
+      return new Response(JSON.stringify({ status: "Ok" }), {
         status: 200,
-        headers: { "content-type": "text/plain; charset=utf-8" },
+        headers: { "content-type": "application/json; charset=utf-8" },
       });
+    }
+    if (url.hostname === "postai.com" && path === "/flags/") {
+      return new Response(
+        JSON.stringify({
+          errorsWhileComputingFlags: false,
+          flags: {
+            "strict-batch-design-validation": {
+              key: "strict-batch-design-validation",
+              enabled: true,
+              variant: null,
+              reason: {
+                code: "condition_match",
+                condition_index: 0,
+                description: "Matched condition set 1",
+              },
+              metadata: {
+                id: 604440,
+                version: 4,
+                description: null,
+                payload: null,
+              },
+            },
+          },
+          requestId: "3463ee84-9d0d-4b00-879e-163e1eb91287",
+          evaluatedAt: 1775633486383,
+          defaultIdentifiedOnly: true,
+          sessionRecording: false,
+          productTours: false,
+          errorTracking: {
+            autocaptureExceptions: false,
+            suppressionRules: [],
+          },
+          elementsChainAsString: true,
+          autocaptureExceptions: false,
+          captureDeadClicks: false,
+          capturePerformance: {
+            network_timing: true,
+            web_vitals: false,
+            web_vitals_allowed_metrics: null,
+          },
+          surveys: false,
+          siteApps: [],
+          heatmaps: false,
+          supportedCompression: ["gzip", "gzip-js"],
+          analytics: {
+            endpoint: "/i/v0/e/",
+          },
+          autocapture_opt_out: false,
+          logs: {
+            captureConsoleLogs: false,
+          },
+          token: "phc_2wPD6fAAVKHsNwHZW6VjSAYE9ZebYNUA8ybuPhXkGO2",
+          hasFeatureFlags: true,
+          conversations: false,
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json; charset=utf-8" },
+        },
+      );
+    }
+    // 登录相关接口
+    if (url.hostname === "api.pencilai.dev" && path === "/auth/request-code") {
+      // 发送邮件
+      return new Response(JSON.stringify({ message: "Code sent" }), {
+        status: 200,
+        headers: { "content-type": "application/json; charset=utf-8" },
+      });
+    }
+    if (url.hostname === "api.pencilai.dev" && path === "/auth/check-token") {
+      // 发送邮件，直接返回已经送达的状态
+      return new Response(JSON.stringify({ status: "delivered" }), {
+        status: 200,
+        headers: { "content-type": "application/json; charset=utf-8" },
+      });
+    }
+    if (url.hostname === "api.pencilai.dev" && path === "/auth/device-login") {
+      // 确认登录接口
+      return new Response(
+        JSON.stringify({
+          sessionToken:
+            "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..YoowhuaGZ6hWctSB.ZE2hbMMPLOGls4KOrLR67xvvQF8q5pBklmG0K3QIR4dFPnWxKx3BtqI56Mrxz0QmafxdlCMR-latiaYijqSbF9pzNZCoggF4w4JO1UPGt2PT19ogKfHUk7JoqISzG0wKEOe_nXpUniNuXhhvrASXAJ5M5nXM9Zh8ch5FuWMKAf7Rz7Sya64CoWIewJHogqBtj_igNNgYwj83vQDyjXbCwnADiRmTGeyD_5Ko1xF31gBmIbXhBTQ85q9YLZawjMF5jxlhX7-HxS7Wyabbxz5vKMCFKYb4j0JrchlDYz3h1dvp-OEXbJWNu7FFSGDxpw30voA8wjBn9IjR7NKZXSHOLWuXiUe0cDYmRb3i0wHZ3x3wzHMrRsSgNEe38urrz5nHxdqskJVYwmcD0Y1MjZjIFHQgzzx28uNkXUjkoToLt5P9o37DdwKuLQxNLzz3WUfD-e0.XB9vaGNzlh4wtr0J5g7kaQ",
+          email: "james.outer123@gmail.com",
+          hasSetPassword: true,
+          needsCompletion: false,
+          slug: "tmx-1",
+          profileUrl: "https://pencil.dev/tmx-1",
+          status: "user_with_password",
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json; charset=utf-8" },
+        },
+      );
     }
     // 1. 模拟特定路径的响应
     // if (path.includes("/api/v1/status")) {

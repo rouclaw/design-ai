@@ -2002,22 +2002,102 @@ electron.app.whenReady().then(async () => {
     const url = new URL(request.url);
     const path2 = url.pathname;
     console.log(url, path2, "========");
-    if (url.hostname === "postai.com") {
-      return new electron.Response("ok", {
+    if (url.hostname === "postai.com" && path2 === "/i/v0/e/") {
+      return new Response(JSON.stringify({ status: "Ok" }), {
         status: 200,
-        headers: { "content-type": "text/plain; charset=utf-8" }
+        headers: { "content-type": "application/json; charset=utf-8" }
       });
     }
-    if (path2.includes("/api/v1/status")) {
-      return new electron.Response(
-        JSON.stringify({ status: "ok", source: "intercepted-by-main" }),
+    if (url.hostname === "postai.com" && path2 === "/flags/") {
+      return new Response(
+        JSON.stringify({
+          errorsWhileComputingFlags: false,
+          flags: {
+            "strict-batch-design-validation": {
+              key: "strict-batch-design-validation",
+              enabled: true,
+              variant: null,
+              reason: {
+                code: "condition_match",
+                condition_index: 0,
+                description: "Matched condition set 1"
+              },
+              metadata: {
+                id: 604440,
+                version: 4,
+                description: null,
+                payload: null
+              }
+            }
+          },
+          requestId: "3463ee84-9d0d-4b00-879e-163e1eb91287",
+          evaluatedAt: 1775633486383,
+          defaultIdentifiedOnly: true,
+          sessionRecording: false,
+          productTours: false,
+          errorTracking: {
+            autocaptureExceptions: false,
+            suppressionRules: []
+          },
+          elementsChainAsString: true,
+          autocaptureExceptions: false,
+          captureDeadClicks: false,
+          capturePerformance: {
+            network_timing: true,
+            web_vitals: false,
+            web_vitals_allowed_metrics: null
+          },
+          surveys: false,
+          siteApps: [],
+          heatmaps: false,
+          supportedCompression: ["gzip", "gzip-js"],
+          analytics: {
+            endpoint: "/i/v0/e/"
+          },
+          autocapture_opt_out: false,
+          logs: {
+            captureConsoleLogs: false
+          },
+          token: "phc_2wPD6fAAVKHsNwHZW6VjSAYE9ZebYNUA8ybuPhXkGO2",
+          hasFeatureFlags: true,
+          conversations: false
+        }),
         {
           status: 200,
-          headers: { "content-type": "application/json" }
+          headers: { "content-type": "application/json; charset=utf-8" }
         }
       );
     }
-    return new electron.Response("Access Denied", { status: 403 });
+    if (url.hostname === "api.pencilai.dev" && path2 === "/auth/request-code") {
+      return new Response(JSON.stringify({ message: "Code sent" }), {
+        status: 200,
+        headers: { "content-type": "application/json; charset=utf-8" }
+      });
+    }
+    if (url.hostname === "api.pencilai.dev" && path2 === "/auth/check-token") {
+      return new Response(JSON.stringify({ status: "delivered" }), {
+        status: 200,
+        headers: { "content-type": "application/json; charset=utf-8" }
+      });
+    }
+    if (url.hostname === "api.pencilai.dev" && path2 === "/auth/device-login") {
+      return new Response(
+        JSON.stringify({
+          sessionToken: "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..YoowhuaGZ6hWctSB.ZE2hbMMPLOGls4KOrLR67xvvQF8q5pBklmG0K3QIR4dFPnWxKx3BtqI56Mrxz0QmafxdlCMR-latiaYijqSbF9pzNZCoggF4w4JO1UPGt2PT19ogKfHUk7JoqISzG0wKEOe_nXpUniNuXhhvrASXAJ5M5nXM9Zh8ch5FuWMKAf7Rz7Sya64CoWIewJHogqBtj_igNNgYwj83vQDyjXbCwnADiRmTGeyD_5Ko1xF31gBmIbXhBTQ85q9YLZawjMF5jxlhX7-HxS7Wyabbxz5vKMCFKYb4j0JrchlDYz3h1dvp-OEXbJWNu7FFSGDxpw30voA8wjBn9IjR7NKZXSHOLWuXiUe0cDYmRb3i0wHZ3x3wzHMrRsSgNEe38urrz5nHxdqskJVYwmcD0Y1MjZjIFHQgzzx28uNkXUjkoToLt5P9o37DdwKuLQxNLzz3WUfD-e0.XB9vaGNzlh4wtr0J5g7kaQ",
+          email: "james.outer123@gmail.com",
+          hasSetPassword: true,
+          needsCompletion: false,
+          slug: "tmx-1",
+          profileUrl: "https://pencil.dev/tmx-1",
+          status: "user_with_password"
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json; charset=utf-8" }
+        }
+      );
+    }
+    return new Response("Access Denied", { status: 403 });
   });
   if (!IS_DEV && IS_MAC && isRunningFromDmg()) {
     electron.dialog.showMessageBoxSync({
