@@ -17,3 +17,7 @@ pnpm --filter pencil start
 - `packages/web/mcp-server-windows-x64.exe`
 
 如果缺少上述文件，涉及 Windows 侧 bun / MCP Server 的相关能力将无法正常工作。
+
+https://api.pencil.dev    替换为： pencil-proxy://api.pencilai.dev
+https://us.i.posthog.com   替换为： pencil-proxy://postai.com
+https://908a8bdbc113924254b644219323ea6f@o4510271844122624.ingest.us.sentry.io   替换为： pencil-proxy://sentryai.com

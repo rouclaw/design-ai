@@ -1933,6 +1933,7 @@ function openTerminal() {
 }
 let initArgs = getInitArgs();
 let pencilApp;
+const SHOULD_OPEN_DEVTOOLS = IS_DEV || process.env.PENCIL_OPEN_DEVTOOLS === "1";
 const gotTheLock = electron.app.requestSingleInstanceLock();
 if (!gotTheLock) {
   electron.app.quit();
@@ -1966,8 +1967,58 @@ electron.protocol.registerSchemesAsPrivileged([
     }
   }
 ]);
+electron.protocol.registerSchemesAsPrivileged([
+  {
+    scheme: "pencil-proxy",
+    privileges: {
+      standard: true,
+      // 像 http 一样处理
+      secure: true,
+      // 标记为安全来源
+      supportFetchAPI: true,
+      // 允许 fetch
+      corsEnabled: true,
+      // 允许跨域
+      stream: true
+      // 支持流
+    }
+  }
+]);
 electron.app.whenReady().then(async () => {
-  logger.info(`App ready. IS_DEV: ${IS_DEV}, NODE_ENV: ${process.env.NODE_ENV}`);
+  logger.info(
+    `App ready. IS_DEV: ${IS_DEV}, NODE_ENV: ${process.env.NODE_ENV}`
+  );
+  if (SHOULD_OPEN_DEVTOOLS) {
+    electron.app.on("browser-window-created", (_event, window) => {
+      window.webContents.once("dom-ready", () => {
+        if (!window.webContents.isDevToolsOpened()) {
+          window.webContents.openDevTools({ mode: "detach" });
+        }
+      });
+    });
+  }
+  electron.protocol.handle("pencil-proxy", async (request) => {
+    logger.debug("Skipping protocol handler 222 (dev mode)");
+    const url = new URL(request.url);
+    const path2 = url.pathname;
+    console.log(url, path2, "========");
+    if (url.hostname === "postai.com") {
+      return new electron.Response("ok", {
+        status: 200,
+        headers: { "content-type": "text/plain; charset=utf-8" }
+      });
+    }
+    if (path2.includes("/api/v1/status")) {
+      return new electron.Response(
+        JSON.stringify({ status: "ok", source: "intercepted-by-main" }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" }
+        }
+      );
+    }
+    return new electron.Response("Access Denied", { status: 403 });
+  });
   if (!IS_DEV && IS_MAC && isRunningFromDmg()) {
     electron.dialog.showMessageBoxSync({
       type: "error",
