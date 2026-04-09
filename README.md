@@ -21,3 +21,10 @@ pnpm --filter pencil start
 https://api.pencil.dev    替换为： pencil-proxy://api.pencilai.dev
 https://us.i.posthog.com   替换为： pencil-proxy://postai.com
 https://908a8bdbc113924254b644219323ea6f@o4510271844122624.ingest.us.sentry.io   替换为： pencil-proxy://sentryai.com
+
+qwen模型需要使用codex的agent才能正常工作。
+
+本地安装codex agent：
+```bash
+npm install -g @openai/codex
+```
