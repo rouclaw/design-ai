@@ -65,15 +65,15 @@ app.whenReady().then(async () => {
     `App ready. IS_DEV: ${IS_DEV}, NODE_ENV: ${process.env.NODE_ENV}`,
   );
 
-  // if (SHOULD_OPEN_DEVTOOLS) {
-  //   app.on("browser-window-created", (_event, window) => {
-  //     window.webContents.once("dom-ready", () => {
-  //       if (!window.webContents.isDevToolsOpened()) {
-  //         window.webContents.openDevTools({ mode: "detach" });
-  //       }
-  //     });
-  //   });
-  // }
+  if (SHOULD_OPEN_DEVTOOLS) {
+    app.on("browser-window-created", (_event, window) => {
+      window.webContents.once("dom-ready", () => {
+        if (!window.webContents.isDevToolsOpened()) {
+          window.webContents.openDevTools({ mode: "detach" });
+        }
+      });
+    });
+  }
 
   protocol.handle("pencil-proxy", async (request) => {
     logger.debug("Skipping protocol handler 222 (dev mode)");

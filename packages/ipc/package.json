@@ -17,10 +17,10 @@
     "dev": "tsup --watch"
   },
   "dependencies": {
-    "@ha/shared": "file:../shared",
+    "@ha/shared": "workspace:*",
     "@ha/ws-server": "workspace:*",
-    "@ha/agent": "file:../agent",
-    "@ha/mcp": "file:../mcp"
+    "@ha/agent": "workspace:*",
+    "@ha/mcp": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^24.1.0",

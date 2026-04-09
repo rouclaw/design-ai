@@ -119,13 +119,13 @@ importers:
   packages/ipc:
     dependencies:
       '@ha/agent':
-        specifier: file:../agent
-        version: file:packages/agent
+        specifier: workspace:*
+        version: link:../agent
       '@ha/mcp':
-        specifier: file:../mcp
+        specifier: workspace:*
         version: link:../mcp
       '@ha/shared':
-        specifier: file:../shared
+        specifier: workspace:*
         version: link:../shared
       '@ha/ws-server':
         specifier: workspace:*
@@ -895,15 +895,6 @@ packages:
     resolution: {integrity: sha512-3TASCATfw+ctICSb4ymrv7iCm0qJ0N9CarB+CZ7zIJ7KqNbwI5JjyDL1/sxoC0ccTO1Zyd1iQ+oqncPg5FJXaA==}
     peerDependencies:
       '@opentelemetry/api': ^1.9.0
-
-  '@ha/agent@file:packages/agent':
-    resolution: {directory: packages/agent, type: directory}
-
-  '@ha/mcp@file:packages/mcp':
-    resolution: {directory: packages/mcp, type: directory}
-
-  '@ha/shared@file:packages/shared':
-    resolution: {directory: packages/shared, type: directory}
 
   '@hono/node-server@1.19.13':
     resolution: {integrity: sha512-TsQLe4i2gvoTtrHje625ngThGBySOgSK3Xo2XRYOdqGN1teR8+I7vchQC46uLJi8OF62YTYA3AhSpumtkhsaKQ==}
@@ -4042,33 +4033,6 @@ snapshots:
       minimatch: 10.2.5
     transitivePeerDependencies:
       - supports-color
-
-  '@ha/agent@file:packages/agent':
-    dependencies:
-      '@anthropic-ai/claude-agent-sdk': 0.2.92(zod@4.3.6)
-      '@ha/mcp': file:packages/mcp
-      '@ha/shared': file:packages/shared
-      '@ha/ws': link:packages/ws
-      '@openai/codex-sdk': 0.98.0
-      dotenv: 17.4.1
-      eventemitter3: 5.0.4
-      jsonrepair: 3.13.3
-      ws: 8.20.0
-      zod: 4.3.6
-    transitivePeerDependencies:
-      - '@cfworker/json-schema'
-      - bufferutil
-      - supports-color
-      - utf-8-validate
-
-  '@ha/mcp@file:packages/mcp':
-    dependencies:
-      '@ha/shared': file:packages/shared
-      smol-toml: 1.6.1
-
-  '@ha/shared@file:packages/shared':
-    dependencies:
-      short-unique-id: 5.3.2
 
   '@hono/node-server@1.19.13(hono@4.12.12)':
     dependencies:

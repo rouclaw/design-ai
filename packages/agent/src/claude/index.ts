@@ -192,7 +192,7 @@ export class ClaudeAgent
         prompt: promptContent,
         options: {
           ...options,
-          model: 'claude-3-5-sonnet-20241022',
+          model: 'claude-opus-4.6',
           env: {
             ...options.env,
             ANTHROPIC_BASE_URL: 'http://127.0.0.1:15721', // 修改这里！
