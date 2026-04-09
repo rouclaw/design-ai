@@ -19,15 +19,14 @@ import type {
 // Message event from the agent during execution
 export interface ClaudeAgentMessage {
   type: "assistant" | "result" | "tool_use";
-  content?: any;
+  content?: unknown;
   status?: string;
   message?: string;
 }
 
 export class ClaudeAgent
   extends EventEmitter<PencilAgentEvents>
-  implements PencilAgent
-{
+  implements PencilAgent {
   private config: AgentConfig;
   private agentQuery: Query | undefined = undefined;
   private abortController: AbortController | undefined = undefined;
@@ -88,9 +87,9 @@ export class ClaudeAgent
         abortController: this.abortController,
         ...(this.config.dangerouslySkipPermissions
           ? {
-              allowDangerouslySkipPermissions: true,
-              permissionMode: "bypassPermissions" as const,
-            }
+            allowDangerouslySkipPermissions: true,
+            permissionMode: "bypassPermissions" as const,
+          }
           : undefined),
         includePartialMessages: this.config.includePartialMessages,
         canUseTool: async (
@@ -177,9 +176,30 @@ export class ClaudeAgent
         sessionId,
         files,
       );
+      // const optionsForLog = {
+      //   ...options,
+      //   env: options.env
+      //     ? Object.fromEntries(
+      //       Object.keys(options.env).map((key) => [key, "[REDACTED]"]),
+      //     )
+      //     : options.env,
+      //   stderr: undefined,
+      //   abortController: undefined,
+      //   canUseTool: undefined,
+      // };
+      // logger.debug("Claude query options:", optionsForLog);
       this.agentQuery = query({
         prompt: promptContent,
-        options,
+        options: {
+          ...options,
+          model: 'claude-3-5-sonnet-20241022',
+          env: {
+            ...options.env,
+            ANTHROPIC_BASE_URL: 'http://127.0.0.1:15721', // 修改这里！
+            ANTHROPIC_API_KEY: 'sk-or',
+            ANTHROPIC_BETAS: '' // 建议置空，避开 400 错误
+          }
+        },
       });
 
       const batchDesignCalls = new Map<
@@ -257,7 +277,12 @@ export class ClaudeAgent
         }
 
         if (message.type === "system" && message.subtype === "init") {
-          logger.debug("Session initialized:", (message as any).session_id);
+          const session = (
+            "session_id" in message
+              ? (message as { session_id?: unknown }).session_id
+              : undefined
+          ) as unknown;
+          logger.debug("Session initialized:", session);
         }
 
         if (message.type === "stream_event") {
@@ -311,6 +336,9 @@ export class ClaudeAgent
             if (!call) {
               continue;
             }
+            if (!call.filePath) {
+              continue;
+            }
 
             const newConfigs = call.agentsConfig.slice(
               call.index,
@@ -318,7 +346,7 @@ export class ClaudeAgent
             );
 
             this.emit("spawn-agents", {
-              filePath: call.filePath!,
+              filePath: call.filePath,
               agentsConfig: newConfigs,
               id: call.id,
               partial: true,
@@ -547,16 +575,20 @@ export class ClaudeAgent
       return prompt;
     }
 
-    const params = files
-      .map((f) => {
-        if (f.type === "image") {
-          return { type: "image", source: f.source };
-        } else if (f.type === "text") {
-          return { type: "text", text: f.content };
-        }
-        return undefined;
-      })
-      .filter(Boolean) as any;
+    const params: Array<
+      | {
+        type: "image";
+        source: Extract<FileAttachment, { type: "image" }>["source"];
+      }
+      | { type: "text"; text: string }
+    > = [];
+    for (const f of files) {
+      if (f.type === "image") {
+        params.push({ type: "image", source: f.source });
+      } else if (f.type === "text") {
+        params.push({ type: "text", text: f.content });
+      }
+    }
 
     const userMessage: SDKUserMessage = {
       type: "user",
@@ -594,7 +626,7 @@ function completePartialBatchDesign(
     }
 
     return parsed;
-  } catch (_err: any) {
+  } catch (_err: unknown) {
     return undefined;
   }
 }
@@ -613,7 +645,7 @@ function completePartialSpawnAgents(
     }
 
     return parsed;
-  } catch (_err: any) {
+  } catch (_err: unknown) {
     return undefined;
   }
 }

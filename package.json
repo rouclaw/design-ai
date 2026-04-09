@@ -7,7 +7,7 @@
     "pack:desktop": "pnpm -r --filter @app/desktop... build && pnpm --filter @app/desktop run pack",
     "dist:desktop": "pnpm -r --filter @app/desktop... build && pnpm --filter @app/desktop run dist",
     "dist:desktop:mac": "pnpm -r --filter @app/desktop... build && ELECTRON_BUILDER_BINARIES_MIRROR=https://github.com/electron-userland/electron-builder-binaries/releases/download/ pnpm --filter @app/desktop exec electron-builder --mac",
-    "dist:desktop:win": "pnpm -r --filter @app/desktop... build && pnpm --filter @app/desktop exec electron-builder --win"
+    "dist:desktop:win": "pnpm -r --filter @app/desktop... build && pnpm --filter @app/desktop exec electron-builder --win -c.win.signAndEditExecutable=false"
   },
   "devDependencies": {
     "typescript": "^5.0.0",

@@ -65,22 +65,22 @@ app.whenReady().then(async () => {
     `App ready. IS_DEV: ${IS_DEV}, NODE_ENV: ${process.env.NODE_ENV}`,
   );
 
-  if (SHOULD_OPEN_DEVTOOLS) {
-    app.on("browser-window-created", (_event, window) => {
-      window.webContents.once("dom-ready", () => {
-        if (!window.webContents.isDevToolsOpened()) {
-          window.webContents.openDevTools({ mode: "detach" });
-        }
-      });
-    });
-  }
+  // if (SHOULD_OPEN_DEVTOOLS) {
+  //   app.on("browser-window-created", (_event, window) => {
+  //     window.webContents.once("dom-ready", () => {
+  //       if (!window.webContents.isDevToolsOpened()) {
+  //         window.webContents.openDevTools({ mode: "detach" });
+  //       }
+  //     });
+  //   });
+  // }
 
   protocol.handle("pencil-proxy", async (request) => {
     logger.debug("Skipping protocol handler 222 (dev mode)");
 
     const url = new URL(request.url);
     const path = url.pathname; // 获取请求路径
-    console.log(url, path, "========");
+    // console.log(url, path, "========");
     // 监控配置
     if (url.hostname === "postai.com" && path === "/i/v0/e/") {
       return new Response(JSON.stringify({ status: "Ok" }), {

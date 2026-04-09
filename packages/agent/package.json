@@ -19,7 +19,7 @@
     "dev": "node esbuild.config.mjs --watch",
     "start": "node dist/cjs/runner.js",
     "start:dev": "npm run build && npm start",
-    "lint": "biome check"
+    "lint": "biome check src"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.2.87",

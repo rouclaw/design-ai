@@ -5,15 +5,15 @@ import type { AgentConfig } from "./config.js";
 import type { PencilAgent } from "./types.js";
 
 export function createAgent(type: AgentType, config: AgentConfig): PencilAgent {
-  switch (type) {
-    case "claude": {
-      return new ClaudeAgent(config);
-    }
-    case "codex": {
-      return new CodexAgent(config);
-    }
+	switch (type) {
+		case "claude": {
+			return new ClaudeAgent(config);
+		}
+		case "codex": {
+			return new CodexAgent(config);
+		}
 
-    default:
-      throw new Error(`Unknown agent type: ${type}`);
-  }
+		default:
+			throw new Error(`Unknown agent type: ${type}`);
+	}
 }
