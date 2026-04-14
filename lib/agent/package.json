@@ -1,0 +1,44 @@
+{
+  "name": "@ha/agent",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/cjs/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc && node esbuild.config.mjs",
+    "build:types": "tsc --declaration --emitDeclarationOnly --outDir dist",
+    "dev": "node esbuild.config.mjs --watch",
+    "start": "node dist/cjs/runner.js",
+    "start:dev": "npm run build && npm start",
+    "lint": "biome check"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.87",
+    "@ha/mcp": "file:../mcp",
+    "@ha/shared": "file:../shared",
+    "@ha/ws": "file:../ws",
+    "@openai/codex-sdk": "^0.98.0",
+    "dotenv": "^17.2.2",
+    "eventemitter3": "^5.0.1",
+    "jsonrepair": "^3.13.1",
+    "ws": "^8.18.3",
+    "zod": "^4.3.5"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.5",
+    "@types/node": "^24.1.0",
+    "@types/ws": "^8.18.1",
+    "esbuild": "^0.24.0",
+    "glob": "^11.0.3",
+    "typescript": "^5.0.0"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "root": false,
+  "extends": ["./../../biome.json"],
+  "files": {
+    "includes": ["**", "!src/generated-validator.ts"]
+  },
+  "linter": {
+    "includes": [
+      "**",
+      "!src/generated-types-public.ts",
+      "!src/generated-types-private.ts"
+    ]
+  }
+}

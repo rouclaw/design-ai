@@ -1,0 +1,451 @@
+import * as os from "node:os";
+import * as path from "node:path";
+import type { ThreadOptions, UserInput } from "@openai/codex-sdk";
+import { EventEmitter } from "eventemitter3";
+import type { AgentConfig } from "../config.js";
+import type {
+  FileAttachment,
+  PencilAgent,
+  PencilAgentEvents,
+} from "../types.js";
+
+// Type imported dynamically to avoid CJS/ESM compatibility issues
+type Thread = Awaited<
+  ReturnType<import("@openai/codex-sdk").Codex["startThread"]>
+>;
+
+export class CodexAgent
+  extends EventEmitter<PencilAgentEvents>
+  implements PencilAgent
+{
+  private config: AgentConfig;
+  private thread: Thread | undefined = undefined;
+  private abortController: AbortController | undefined = undefined;
+
+  constructor(config: AgentConfig) {
+    super();
+
+    this.config = config;
+  }
+
+  async execute(prompt: string, files?: FileAttachment[]): Promise<void> {
+    const { logger, systemPrompt, sessionId } = this.config;
+
+    this.abortController = new AbortController();
+    let queryError: string | undefined;
+
+    try {
+      logger.info("Starting Codex Agent");
+
+      if (sessionId) {
+        logger.info(`Resuming session: ${sessionId}`);
+      }
+
+      if (files && files.length > 0) {
+        logger.info(`Processing ${files.length} file attachment(s)`);
+      }
+
+      // Dynamic import to avoid CJS/ESM compatibility issues
+      // @openai/codex-sdk is ESM-only and can't be statically imported in CJS
+      const { Codex } = await import("@openai/codex-sdk");
+      const mcpTransport = this.getMcpConfig();
+
+      const codex = new Codex({
+        codexPathOverride: this.getExecutablePath(),
+        apiKey: this.config.apiKey,
+        config: {
+          ...(systemPrompt
+            ? { developer_instructions: systemPrompt }
+            : undefined),
+          mcp_servers: {
+            pencil: {
+              ...(mcpTransport ?? undefined),
+              disabled_tools: this.config.disallowedTools ?? [],
+            },
+          },
+        },
+      });
+
+      const threadOptions: ThreadOptions = {
+        model: this.config.model,
+        skipGitRepoCheck: true,
+        workingDirectory: this.config.cwd,
+        webSearchEnabled: true,
+        sandboxMode: this.config.dangerouslySkipPermissions
+          ? "danger-full-access"
+          : "workspace-write",
+        modelReasoningEffort: "low",
+        ...(this.config.dangerouslySkipPermissions
+          ? { approvalPolicy: "never" as const }
+          : undefined),
+      };
+
+      this.thread = sessionId
+        ? codex.resumeThread(sessionId, threadOptions)
+        : codex.startThread(threadOptions);
+
+      const promptContent = await this.buildPromptWithFiles(prompt, files);
+      const { events } = await this.thread.runStreamed(promptContent, {
+        signal: this.abortController.signal,
+      });
+
+      let finalResponse: string = "";
+      for await (const event of events) {
+        logger.info(event);
+
+        switch (event.type) {
+          case "thread.started":
+            this.emit("session-event", {
+              type: "start",
+              sessionId: event.thread_id,
+            });
+            break;
+          case "turn.failed":
+            logger.error("Codex agent turn failed:", queryError);
+            break;
+          case "error":
+            queryError = event.message;
+            logger.error("Codex agent error:", queryError);
+            break;
+          case "turn.completed":
+            logger.info("Codex agent usage:", event.usage);
+            break;
+          case "item.started": {
+            const item = event.item;
+            switch (item.type) {
+              case "mcp_tool_call":
+                this.emit("session-event", {
+                  type: "tool-use-start",
+                  sessionId: sessionId,
+                  id: item.id,
+                  name: item.tool,
+                });
+                break;
+              case "agent_message":
+                this.emit("session-event", {
+                  type: "stream-message",
+                  sessionId: sessionId,
+                  text: item.text,
+                });
+                break;
+              case "todo_list":
+                this.emit("session-event", {
+                  type: "tool-use-start",
+                  sessionId: sessionId,
+                  id: item.id,
+                  name: "todo_write",
+                });
+                break;
+              case "command_execution":
+                this.emit("session-event", {
+                  type: "tool-use-start",
+                  sessionId: sessionId,
+                  id: item.id,
+                  name: "Bash",
+                });
+                break;
+              case "web_search":
+                this.emit("session-event", {
+                  type: "tool-use-start",
+                  sessionId: sessionId,
+                  id: item.id,
+                  name: "WebSearch",
+                });
+                break;
+              default:
+                break;
+            }
+            break;
+          }
+          case "item.updated": {
+            const item = event.item;
+            if (item.type === "todo_list") {
+              this.emit("session-event", {
+                type: "tool-use",
+                sessionId: sessionId,
+                id: item.id,
+                name: "todo_write",
+                input: {
+                  todos: item.items.map((i: any, ix: number) => ({
+                    id: `${item.id}-${ix}`,
+                    content: i.text,
+                    status: i.completed ? "completed" : "pending",
+                  })),
+                },
+                streaming: false,
+              });
+            }
+            break;
+          }
+          case "item.completed": {
+            const item = event.item;
+
+            if (item.type === "agent_message") {
+              finalResponse = item.text;
+            }
+
+            switch (item.type) {
+              case "agent_message":
+                this.emit("session-event", {
+                  type: "message",
+                  sessionId: sessionId,
+                  source: "assistant",
+                  text: item.text,
+                });
+                break;
+              case "reasoning":
+                this.emit("session-event", {
+                  type: "thinking",
+                  sessionId: sessionId,
+                  text: item.text,
+                });
+                break;
+              case "mcp_tool_call":
+                this.emit("session-event", {
+                  type: "tool-use",
+                  sessionId: sessionId,
+                  id: item.id,
+                  name: item.tool,
+                  input: item.arguments,
+                  streaming: false,
+                });
+
+                this.emit("session-event", {
+                  type: "tool-result",
+                  sessionId: sessionId,
+                  id: item.id,
+                  output:
+                    item.status === "failed"
+                      ? item.error?.message
+                      : item.result?.content,
+                  success: item.status !== "failed",
+                });
+                break;
+              case "todo_list":
+                this.emit("session-event", {
+                  type: "tool-use",
+                  sessionId: sessionId,
+                  id: item.id,
+                  name: "todo_write",
+                  input: {
+                    todos: item.items.map((i: any, ix: number) => ({
+                      id: `${item.id}-${ix}`,
+                      content: i.text,
+                      status: i.completed ? "completed" : "pending",
+                    })),
+                  },
+                  streaming: false,
+                });
+                break;
+              case "command_execution":
+                this.emit("session-event", {
+                  type: "tool-use",
+                  sessionId: sessionId,
+                  id: item.id,
+                  name: "Bash",
+                  input: { command: item.command },
+                  streaming: false,
+                });
+
+                this.emit("session-event", {
+                  type: "tool-result",
+                  sessionId: sessionId,
+                  id: item.id,
+                  output: item.aggregated_output,
+                  success: item.status !== "failed",
+                });
+                break;
+              case "file_change":
+                this.emit("session-event", {
+                  type: "tool-use",
+                  sessionId: sessionId,
+                  id: item.id,
+                  name: "Update",
+                  input: { changes: item.changes, status: item.status },
+                  streaming: false,
+                });
+
+                this.emit("session-event", {
+                  type: "tool-result",
+                  sessionId: sessionId,
+                  id: item.id,
+                  output: item.status,
+                  success: item.status !== "failed",
+                });
+                break;
+              case "web_search":
+                this.emit("session-event", {
+                  type: "tool-result",
+                  sessionId: sessionId,
+                  id: item.id,
+                  output: (item as any).action,
+                  success: true,
+                });
+                break;
+
+              default:
+                break;
+            }
+            break;
+          }
+
+          default:
+            break;
+        }
+      }
+
+      if (queryError) {
+        this.emit("session-event", {
+          type: "end",
+          sessionId: sessionId,
+          content: {
+            reason: "failed",
+            message: queryError,
+          },
+        });
+      } else {
+        this.emit("session-event", {
+          type: "end",
+          sessionId: sessionId,
+          content: {
+            reason: "finished",
+            response: finalResponse,
+          },
+        });
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      logger.error("Error executing Codex Agent:", errorMessage);
+
+      this.emit("session-event", {
+        type: "end",
+        sessionId,
+        content: {
+          reason: "failed",
+          message: queryError || "Agent execution failed",
+        },
+      });
+    } finally {
+      this.thread = undefined;
+      this.abortController = undefined;
+    }
+  }
+
+  async stop(): Promise<void> {
+    if (this.thread) {
+      this.config.logger.info("Stopping Codex Agent");
+
+      try {
+        this.abortController?.abort();
+        this.config.logger.info("Agent stopped successfully");
+      } catch (error) {
+        this.config.logger.error("Error stopping agent:", error);
+      }
+
+      this.emit("session-event", {
+        type: "end",
+        sessionId: this.config.sessionId || "",
+        content: {
+          reason: "stopped",
+        },
+      });
+
+      this.thread = undefined;
+      this.abortController = undefined;
+    }
+  }
+
+  isRunning(): boolean {
+    return this.thread !== undefined;
+  }
+
+  getConfig(): Readonly<AgentConfig> {
+    return Object.freeze({ ...this.config });
+  }
+
+  destroy(): void {
+    const { logger } = this.config;
+    logger.debug("destroy()");
+    this.removeAllListeners();
+  }
+
+  private getMcpConfig():
+    | {
+        command: string;
+        args: string[];
+        env: Record<string, string>;
+      }
+    | undefined {
+    if (!this.config.mcpServers) {
+      return undefined;
+    }
+
+    for (const server of this.config.mcpServers) {
+      if (server.transport === "stdio") {
+        return {
+          command: server.command,
+          args: server.args,
+          env: server.env,
+        };
+      }
+    }
+
+    return undefined;
+  }
+
+  private async buildPromptWithFiles(
+    prompt: string,
+    files?: FileAttachment[],
+  ): Promise<string | UserInput[]> {
+    if (!files || files.length === 0) {
+      return prompt;
+    }
+
+    const inputs: UserInput[] = [
+      {
+        type: "text",
+        text: prompt,
+      },
+    ];
+
+    for (const file of files) {
+      if (file.type === "text") {
+        inputs.push({
+          type: "text",
+          text: file.content,
+        });
+      } else if (file.type === "image" && file.path) {
+        inputs.push({
+          type: "local_image",
+          path: file.path,
+        });
+      }
+    }
+
+    return inputs;
+  }
+
+  private getExecutablePath(): string | undefined {
+    if (!this.config.packagePath) {
+      return undefined;
+    }
+
+    const arch = os.arch() === "arm64" ? "aarch64" : "x86_64";
+    const codexBinaryName =
+      process.platform === "win32" ? "codex.exe" : "codex";
+    const plat =
+      os.platform() === "darwin"
+        ? "apple-darwin"
+        : os.platform() === "win32"
+          ? "pc-windows-msvc"
+          : "unknown-linux-musl";
+    return path.join(
+      this.config.packagePath,
+      "vendor",
+      `${arch}-${plat}`,
+      "codex",
+      codexBinaryName,
+    );
+  }
+}

@@ -1,23 +1,79 @@
 {
-  "name": "my-monorepo",
-  "private": true,
+  "name": "pencil",
+  "productName": "Pencil",
+  "version": "1.1.48",
+  "main": "out/main.js",
+  "bunVersion": "1.3.5",
+  "author": "",
+  "license": "ISC",
+  "description": "Desktop app for Pencil.",
+  "repository": "github:highagency/pencil-desktop-releases",
   "scripts": {
-    "dev:desktop": "pnpm --filter @app/desktop dev",
-    "build:desktop": "pnpm -r --filter @app/desktop... build",
-    "pack:desktop": "pnpm -r --filter @app/desktop... build && pnpm --filter @app/desktop run pack",
-    "dist:desktop": "pnpm -r --filter @app/desktop... build && pnpm --filter @app/desktop run dist",
-    "dist:desktop:mac": "pnpm -r --filter @app/desktop... build && ELECTRON_BUILDER_BINARIES_MIRROR=https://github.com/electron-userland/electron-builder-binaries/releases/download/ pnpm --filter @app/desktop exec electron-builder --mac",
-    "dist:desktop:win": "pnpm -r --filter @app/desktop... build && pnpm --filter @app/desktop exec electron-builder --win -c.win.signAndEditExecutable=false"
+    "dev": "npm run server & NODE_ENV=development electron .",
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "cjs": "node scripts/restore.js",
+    "server":"http-server ./out/editor --port 3000"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.87",
+    "@ha/agent": "file:./lib/agent",
+    "@ha/ipc": "file:./lib/ipc",
+    "@ha/mcp": "file:./lib/mcp",
+    "@ha/schema": "file:./lib/schema",
+    "@ha/shared": "file:./lib/shared",
+    "@ha/ws-server": "file:./lib/ws-server",
+    "@ha/ws": "file:./lib/ws",
+    "@sentry/electron": "^7.6.0",
+    "electron-log": "^5.4.3",
+    "electron-store": "8.1.0",
+    "electron-updater": "^6.6.2",
+    "eventemitter3": "^5.0.1"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
-    "turbo": "latest"
+    "electron": "^33.0.0",
+    "electron-builder": "^24.13.3",
+    "http-server": "^14.1.1",
+    "jscodeshift": "^17.3.0",
+    "lodash": "^4.18.1",
+    "recast": "^0.23.11"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": ["electron", "esbuild"]
-  },
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ]
+  "build": {
+    "appId": "dev.pencil.desktop",
+    "productName": "Pencil",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "out/**",
+      "package.json"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "out/mcp-server-*",
+      "out/assets/bun-*",
+      "node_modules/@anthropic-ai/claude-agent-sdk/**",
+      "node_modules/@openai/codex-sdk/**"
+    ],
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "out/assets/icon.icns"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "out/assets/icon.ico"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "icon": "out/assets/icon.png"
+    }
+  }
 }

@@ -1,0 +1,32 @@
+{
+  "name": "@ha/mcp",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/cjs/index.js"
+    }
+  },
+  "scripts": {
+    "export-schemas": "cd ../.. && go run ./servers/mcp/cmd/export-schemas",
+    "build": "npm run export-schemas && tsc && node esbuild.config.mjs",
+    "build:types": "tsc --declaration --emitDeclarationOnly --outDir dist",
+    "dev": "node esbuild.config.mjs --watch"
+  },
+  "devDependencies": {
+    "@types/node": "^24.1.0",
+    "esbuild": "^0.24.0",
+    "glob": "^11.0.3",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "smol-toml": "^1.6.0",
+    "@ha/shared": "file:../shared"
+  }
+}

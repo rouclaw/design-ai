@@ -1,0 +1,29 @@
+{
+  "name": "@ha/shared",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.js"
+    }
+  },
+  "scripts": {
+    "build": "npm run build:cjs && npm run build:esm && npm run build:types && npm run postbuild",
+    "build:cjs": "tsc --module commonjs --outDir dist/cjs",
+    "build:esm": "tsc --module esnext --outDir dist/esm",
+    "build:types": "tsc --declaration --emitDeclarationOnly --outDir dist/types",
+    "postbuild": "node -e \"fs=require('fs');fs.writeFileSync('dist/esm/package.json','{\\\"type\\\":\\\"module\\\"}');fs.writeFileSync('dist/cjs/package.json','{\\\"type\\\":\\\"commonjs\\\"}')\"",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "short-unique-id": "^5.3.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
